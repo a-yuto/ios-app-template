@@ -1,0 +1,139 @@
+# ios-app-template
+
+個人開発用の iOS アプリスターターテンプレート。
+"Use this template" でクローンし、最低限の改名だけで実装を始められる構成。
+
+## スタック
+
+| 項目        | 採用                                           |
+| ----------- | ---------------------------------------------- |
+| UI          | SwiftUI                                        |
+| アーキテクチャ | MV (`@Observable` + View)                     |
+| 永続化      | SwiftData (`@Model`)                           |
+| 最低 iOS    | 17.0                                           |
+| Unit Test   | Swift Testing (`@Test`)                        |
+| UI Test     | XCUITest                                       |
+| Lint/Format | SwiftLint + SwiftFormat                        |
+| CI          | GitHub Actions (`.github/workflows/ci.yml`)    |
+| 配信        | Fastlane (`fastlane/`)                         |
+
+## クイックスタート
+
+### 1. プロジェクト名の変更
+
+テンプレートからクローンしたら、まず置換でリネームします。`ios-app-template` / `ios_app_template` を新しいプロジェクト名に置き換えてください。
+
+```bash
+NEW_NAME="my-cool-app"        # ハイフン区切り
+NEW_NAME_UNDERSCORE="my_cool_app"  # スネーク (Swiftシンボル用)
+
+# ファイル / ディレクトリ名を置換
+find . -depth -name "*ios-app-template*" -execdir bash -c 'mv "$1" "${1/ios-app-template/'"$NEW_NAME"'}"' _ {} \;
+find . -depth -name "*ios_app_template*" -execdir bash -c 'mv "$1" "${1/ios_app_template/'"$NEW_NAME_UNDERSCORE"'}"' _ {} \;
+
+# ファイル内容を置換
+grep -rl "ios-app-template" --include="*.swift" --include="*.yml" --include="*.pbxproj" --include="*.md" --include="Fastfile" --include="Appfile" . | xargs sed -i "" "s/ios-app-template/$NEW_NAME/g"
+grep -rl "ios_app_template" --include="*.swift" --include="*.yml" --include="*.pbxproj" --include="*.md" . | xargs sed -i "" "s/ios_app_template/$NEW_NAME_UNDERSCORE/g"
+```
+
+> Xcode を一度閉じてから実行し、その後 Xcode で開き直してください。
+
+### 2. Bundle ID / Team ID の差し替え
+
+`ios-app-template.xcodeproj/project.pbxproj` 内の以下を編集:
+
+- `PRODUCT_BUNDLE_IDENTIFIER` (3箇所: app / Tests / UITests)
+- `DEVELOPMENT_TEAM` (個人開発者のTeam ID)
+
+または Xcode の **Signing & Capabilities** から GUI で変更。
+
+### 3. 依存ツールのインストール
+
+```bash
+# Homebrew で
+brew install swiftlint swiftformat xcbeautify
+
+# Fastlane
+bundle install
+```
+
+### 4. 動作確認
+
+```bash
+# ビルド + Unit + UI テスト
+bundle exec fastlane test
+
+# Lint
+bundle exec fastlane lint
+```
+
+## 開発フロー
+
+### 日常コマンド
+
+```bash
+# Format
+swiftformat .
+
+# Lint
+swiftlint
+
+# Unit テストのみ
+xcodebuild test \
+  -project ios-app-template.xcodeproj \
+  -scheme ios-app-template \
+  -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+  -only-testing:ios-app-templateTests | xcbeautify
+```
+
+### テスト方針 (徹底)
+
+機能追加・バグ修正のたびに **Unit (Swift Testing) と E2E (XCUITest) の両方を必ず追加** します。後回しは禁止、テストなしのマージも禁止。詳細ルールは [`CLAUDE.md`](CLAUDE.md#テスト方針-徹底ルール) に集約しています。
+
+### CI
+
+`.github/workflows/ci.yml` が以下を実行します。
+
+- `lint`: SwiftLint (`--strict`)
+- `build-and-test`: build + Unit テスト
+- `ui-test`: XCUITest (build-and-test 成功後)
+
+### TestFlight 配信
+
+```bash
+# App Store Connect API Key を fastlane/.env に設定後
+bundle exec fastlane beta
+```
+
+詳細は [`fastlane/README.md`](fastlane/README.md) を参照。
+
+## ディレクトリ構成
+
+```
+.
+├── .github/workflows/ci.yml        # GitHub Actions CI
+├── .gitignore                       # Xcode / Fastlane 用
+├── .swiftformat                     # SwiftFormat 設定
+├── .swiftlint.yml                   # SwiftLint 設定
+├── CLAUDE.md                        # Claude Code 向けプロジェクト情報
+├── Gemfile                          # Fastlane の依存
+├── README.md
+├── fastlane/                        # Fastlane 設定
+│   ├── Appfile
+│   ├── Fastfile
+│   ├── Pluginfile
+│   └── README.md
+├── ios-app-template/                # アプリ本体
+│   ├── Assets.xcassets/
+│   ├── ContentView.swift
+│   ├── Item.swift                   # SwiftData モデルのサンプル
+│   └── ios_app_templateApp.swift
+├── ios-app-template.xcodeproj/
+├── ios-app-templateTests/           # Unit (Swift Testing)
+└── ios-app-templateUITests/         # UI / E2E (XCUITest)
+```
+
+## Issue 管理
+
+このテンプレートおよび派生プロジェクトの issue は **すべて** [`a-yuto/niki-sandbox`](https://github.com/a-yuto/niki-sandbox/issues) に集約します。詳細は [`CLAUDE.md`](CLAUDE.md) を参照。
+# ios-app-template
