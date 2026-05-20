@@ -1,0 +1,77 @@
+# SwiftLint configuration
+# https://realm.github.io/SwiftLint/
+
+included:
+  - ios-app-template
+  - ios-app-templateTests
+  - ios-app-templateUITests
+
+excluded:
+  - "**/.build"
+  - "**/DerivedData"
+  - "**/Pods"
+  - "**/build"
+  - fastlane
+
+# 有効化するオプトインルール (SwiftUI個人開発で恩恵が大きいもの)
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - closure_spacing
+  - contains_over_first_not_nil
+  - explicit_init
+  - first_where
+  - implicit_return
+  - last_where
+  - literal_expression_end_indentation
+  - multiline_arguments
+  - multiline_parameters
+  - operator_usage_whitespace
+  - prefer_self_type_over_type_of_self
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+
+disabled_rules:
+  - trailing_whitespace
+  - todo
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+
+identifier_name:
+  min_length: 2
+  excluded:
+    - id
+    - x
+    - y
+    - z
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 60
+    error: 80
+
+function_body_length:
+  warning: 60
+  error: 120
+
+type_body_length:
+  warning: 300
+  error: 500
+
+file_length:
+  warning: 500
+  error: 1000
+  ignore_comment_only_lines: true
+
+nesting:
+  type_level:
+    warning: 3
+
+reporter: "xcode"

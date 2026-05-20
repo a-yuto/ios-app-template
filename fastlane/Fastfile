@@ -1,0 +1,62 @@
+default_platform(:ios)
+
+SCHEME = "ios-app-template"
+PROJECT = "ios-app-template.xcodeproj"
+
+platform :ios do
+  desc "Unit + UI テストを実行"
+  lane :test do
+    run_tests(
+      project: PROJECT,
+      scheme: SCHEME,
+      devices: ["iPhone 16"],
+      clean: true,
+      code_coverage: true
+    )
+  end
+
+  desc "Lint を実行 (SwiftLint)"
+  lane :lint do
+    swiftlint(
+      mode: :lint,
+      strict: true,
+      reporter: "emoji",
+      config_file: ".swiftlint.yml"
+    )
+  end
+
+  desc "TestFlight にベータ配信 (要 App Store Connect API Key)"
+  lane :beta do
+    ensure_git_status_clean
+    increment_build_number(xcodeproj: PROJECT)
+
+    build_app(
+      project: PROJECT,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true
+    )
+
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "App Store に申請 (慎重に使う)"
+  lane :release do
+    ensure_git_status_clean
+    build_app(
+      project: PROJECT,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true
+    )
+    upload_to_app_store(
+      submit_for_review: false,
+      automatic_release: false,
+      force: true
+    )
+  end
+end

@@ -1,0 +1,43 @@
+# SwiftFormat configuration
+# https://github.com/nicklockwood/SwiftFormat
+
+--swiftversion 5.10
+--exclude .build,DerivedData,Pods,build,fastlane,**/*.generated.swift
+
+# Layout
+--indent 4
+--tabwidth 4
+--maxwidth 140
+--linebreaks lf
+--commas inline
+--semicolons never
+--trimwhitespace always
+--ranges no-space
+--operatorfunc spaced
+--elseposition same-line
+--guardelse same-line
+
+# Wrapping
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--funcattributes prev-line
+--typeattributes prev-line
+
+# SwiftUI / 命名関連
+--self init-only
+--importgrouping testable-bottom
+--patternlet inline
+--stripunusedargs closure-only
+
+# 有効化するルール
+--enable isEmpty
+--enable wrapMultilineStatementBraces
+--enable redundantSelf
+--enable sortImports
+--enable trailingCommas
+
+# 無効化するルール
+--disable redundantReturn
+--disable redundantType

@@ -1,0 +1,72 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode - User-specific
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+# Xcode - Build
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcarchive
+
+# Xcode - Other
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# CocoaPods (使う場合に備えて)
+Pods/
+
+# Carthage (使う場合に備えて)
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+fastlane/.env
+fastlane/.env.default
+fastlane/.env.*
+
+# Provisioning / signing (絶対にコミットしない)
+*.mobileprovision
+*.p12
+*.cer
+*.p8
+AuthKey_*.p8
+
+# Environment
+.env
+.env.*
+
+# Editor / Tools
+.idea/
+.vscode/
+*.swp
+*~.nib
+
+# Logs
+*.log
