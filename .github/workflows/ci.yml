@@ -19,18 +19,18 @@ jobs:
     name: SwiftLint
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install SwiftLint
         run: brew install swiftlint
       - name: Run SwiftLint
         run: swiftlint --strict --reporter github-actions-logging
 
-  build-and-test:
-    name: Build & Unit Test
+  test:
+    name: Build & Test (Unit + UI)
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install xcbeautify
         run: brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
@@ -84,36 +84,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             test-without-building | xcbeautify
 
-  ui-test:
-    name: UI / E2E Test
-    runs-on: macos-15
-    needs: build-and-test
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install xcbeautify
-        run: brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
-
-      - name: Pick iPhone simulator
-        id: sim
-        run: |
-          UDID=$(xcrun simctl list devices available --json \
-            | jq -r '
-              [ .devices
-                | to_entries[]
-                | select(.key | test("com.apple.CoreSimulator.SimRuntime.iOS"))
-                | .value[]
-                | select(.isAvailable == true)
-                | select(.name | test("^iPhone"))
-              ]
-              | sort_by(.name) | reverse | .[0].udid')
-          if [ -z "$UDID" ] || [ "$UDID" = "null" ]; then
-            echo "No iPhone simulator available" >&2
-            exit 1
-          fi
-          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-
       - name: Run UI tests
         run: |
           set -o pipefail
@@ -124,4 +94,4 @@ jobs:
             -configuration Debug \
             -only-testing:ios-app-templateUITests \
             CODE_SIGNING_ALLOWED=NO \
-            test | xcbeautify
+            test-without-building | xcbeautify
