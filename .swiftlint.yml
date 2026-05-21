@@ -36,6 +36,9 @@ opt_in_rules:
 disabled_rules:
   - trailing_whitespace
   - todo
+  # Xcode が自動生成する @main の App 型や *Tests 型はバンドル名由来でアンダースコアを含むため許容する
+  # type_name の allowed_symbols だけでは足りないケースがあるので併用
+  - static_over_final_class
 
 line_length:
   warning: 140
@@ -56,6 +59,10 @@ type_name:
   max_length:
     warning: 60
     error: 80
+  # Xcode 自動生成の `ios_app_templateApp` / `ios_app_templateUITests` などを許容
+  # (バンドル名 `ios-app-template` 由来でハイフンが `_` に変換され、先頭小文字になる)
+  allowed_symbols: ["_"]
+  validates_start_with_lowercase: off
 
 function_body_length:
   warning: 60

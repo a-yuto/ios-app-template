@@ -13,7 +13,6 @@ concurrency:
 env:
   SCHEME: ios-app-template
   PROJECT: ios-app-template.xcodeproj
-  DESTINATION: "platform=iOS Simulator,name=iPhone 16,OS=latest"
 
 jobs:
   lint:
@@ -33,19 +32,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+      - name: Install xcbeautify
+        run: brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
 
-      - name: Show available simulators
-        run: xcrun simctl list devices available
+      - name: Show Xcode and SDK info
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes
+          xcrun simctl list devices available | grep -E "iPhone" | head -10
 
-      - name: Build
+      - name: Pick iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available --json \
+            | jq -r '
+              [ .devices
+                | to_entries[]
+                | select(.key | test("com.apple.CoreSimulator.SimRuntime.iOS"))
+                | .value[]
+                | select(.isAvailable == true)
+                | select(.name | test("^iPhone"))
+              ]
+              | sort_by(.name) | reverse | .[0].udid')
+          if [ -z "$UDID" ] || [ "$UDID" = "null" ]; then
+            echo "No iPhone simulator available" >&2
+            exit 1
+          fi
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Selected simulator UDID: $UDID"
+
+      - name: Build for testing
         run: |
           set -o pipefail
           xcodebuild \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
+            -destination "generic/platform=iOS Simulator" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             build-for-testing | xcbeautify
@@ -56,7 +78,7 @@ jobs:
           xcodebuild \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
             -configuration Debug \
             -only-testing:ios-app-templateTests \
             CODE_SIGNING_ALLOWED=NO \
@@ -70,8 +92,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+      - name: Install xcbeautify
+        run: brew list xcbeautify >/dev/null 2>&1 || brew install xcbeautify
+
+      - name: Pick iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available --json \
+            | jq -r '
+              [ .devices
+                | to_entries[]
+                | select(.key | test("com.apple.CoreSimulator.SimRuntime.iOS"))
+                | .value[]
+                | select(.isAvailable == true)
+                | select(.name | test("^iPhone"))
+              ]
+              | sort_by(.name) | reverse | .[0].udid')
+          if [ -z "$UDID" ] || [ "$UDID" = "null" ]; then
+            echo "No iPhone simulator available" >&2
+            exit 1
+          fi
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
       - name: Run UI tests
         run: |
@@ -79,7 +120,7 @@ jobs:
           xcodebuild \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
             -configuration Debug \
             -only-testing:ios-app-templateUITests \
             CODE_SIGNING_ALLOWED=NO \
