@@ -52,8 +52,23 @@ grep -rl "ios_app_template" --include="*.swift" --include="*.yml" --include="*.p
 ```bash
 # Homebrew で
 brew install swiftlint swiftformat xcbeautify
+```
 
-# Fastlane
+#### Ruby (Fastlane 用)
+
+Fastlane の最新版は Ruby 3.x を要求し、macOS 標準 Ruby (2.6) では動きません。`rbenv` 等で `.ruby-version` に揃えてください。
+
+```bash
+brew install rbenv ruby-build
+rbenv install   # .ruby-version の版 (3.3.5) が入る
+rbenv rehash
+```
+
+シェルの初期化 (`~/.zshrc` 等) に `eval "$(rbenv init - zsh)"` を追記しておきます。
+
+#### Bundler / Fastlane
+
+```bash
 bundle install
 ```
 
@@ -78,11 +93,12 @@ swiftformat .
 # Lint
 swiftlint
 
-# Unit テストのみ
+# Unit テストのみ (simulator は scripts/pick-simulator.sh が動的に選ぶ)
+UDID=$(scripts/pick-simulator.sh)
 xcodebuild test \
   -project ios-app-template.xcodeproj \
   -scheme ios-app-template \
-  -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+  -destination "platform=iOS Simulator,id=$UDID" \
   -only-testing:ios-app-templateTests | xcbeautify
 ```
 
@@ -121,8 +137,9 @@ bundle exec fastlane beta
 ├── fastlane/                        # Fastlane 設定
 │   ├── Appfile
 │   ├── Fastfile
-│   ├── Pluginfile
 │   └── README.md
+├── scripts/
+│   └── pick-simulator.sh            # ローカル/CI 共通: iPhone Simulator 動的選択
 ├── ios-app-template/                # アプリ本体
 │   ├── Assets.xcassets/
 │   ├── ContentView.swift

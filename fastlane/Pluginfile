@@ -1,4 +1,0 @@
-# fastlane plugins
-# https://docs.fastlane.tools/plugins/using-plugins/
-
-gem "fastlane-plugin-swiftlint"

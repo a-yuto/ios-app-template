@@ -51,6 +51,11 @@ fastlane/.env
 fastlane/.env.default
 fastlane/.env.*
 
+# Bundler / RubyGems
+.bundle/
+vendor/
+Gemfile.lock
+
 # Provisioning / signing (絶対にコミットしない)
 *.mobileprovision
 *.p12

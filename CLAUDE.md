@@ -94,10 +94,11 @@ xcodebuild \
 
 ```bash
 set -o pipefail
+UDID=$(scripts/pick-simulator.sh)
 xcodebuild \
   -project ios-app-template.xcodeproj \
   -scheme ios-app-template \
-  -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+  -destination "platform=iOS Simulator,id=$UDID" \
   -configuration Debug \
   -only-testing:ios-app-templateTests \
   CODE_SIGNING_ALLOWED=NO \
@@ -108,10 +109,11 @@ xcodebuild \
 
 ```bash
 set -o pipefail
+UDID=$(scripts/pick-simulator.sh)
 xcodebuild \
   -project ios-app-template.xcodeproj \
   -scheme ios-app-template \
-  -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+  -destination "platform=iOS Simulator,id=$UDID" \
   -configuration Debug \
   -only-testing:ios-app-templateUITests \
   CODE_SIGNING_ALLOWED=NO \
@@ -124,7 +126,7 @@ xcodebuild \
 bundle exec fastlane lint && bundle exec fastlane test
 ```
 
-> ローカル simulator 名が無い場合は `xcrun simctl list devices available` で実在するデバイス名に置き換える。
+> `scripts/pick-simulator.sh` は CI と同じ優先順 (iPhone 17 系 → 16 系 → ...) で利用可能な simulator を1つ選び、UDID を返す。明示指定したい場合は `SIMULATOR_NAME="iPhone 16 Pro" scripts/pick-simulator.sh`。
 
 ### テスト変更時のユーザー確認 (必須)
 
@@ -148,17 +150,19 @@ bundle exec fastlane lint && bundle exec fastlane test
 bundle exec fastlane test
 
 # Unit のみ
+UDID=$(scripts/pick-simulator.sh)
 xcodebuild test \
   -project ios-app-template.xcodeproj \
   -scheme ios-app-template \
-  -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+  -destination "platform=iOS Simulator,id=$UDID" \
   -only-testing:ios-app-templateTests | xcbeautify
 
 # UI のみ
+UDID=$(scripts/pick-simulator.sh)
 xcodebuild test \
   -project ios-app-template.xcodeproj \
   -scheme ios-app-template \
-  -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+  -destination "platform=iOS Simulator,id=$UDID" \
   -only-testing:ios-app-templateUITests | xcbeautify
 ```
 
