@@ -44,46 +44,8 @@ jobs:
       - name: Pick iPhone simulator
         id: sim
         run: |
-          # 新しめのモデルを優先 (A15 以前の SE 系は XCUITest が不安定なため避ける)
-          PREFERRED=(
-            "iPhone 17 Pro Max" "iPhone 17 Pro" "iPhone 17" "iPhone 17e"
-            "iPhone Air"
-            "iPhone 16 Pro Max" "iPhone 16 Pro" "iPhone 16 Plus" "iPhone 16"
-            "iPhone 15 Pro Max" "iPhone 15 Pro" "iPhone 15 Plus" "iPhone 15"
-          )
-          UDID=""
-          for name in "${PREFERRED[@]}"; do
-            UDID=$(xcrun simctl list devices available --json \
-              | jq -r --arg name "$name" '
-                [ .devices
-                  | to_entries[]
-                  | select(.key | test("com.apple.CoreSimulator.SimRuntime.iOS"))
-                  | .value[]
-                  | select(.isAvailable == true)
-                  | select(.name == $name)
-                ] | first | (.udid // empty)')
-            if [ -n "$UDID" ]; then
-              echo "Selected: $name ($UDID)"
-              break
-            fi
-          done
-          if [ -z "$UDID" ]; then
-            # フォールバック: 任意の iPhone (SE 含む)
-            UDID=$(xcrun simctl list devices available --json \
-              | jq -r '
-                [ .devices
-                  | to_entries[]
-                  | select(.key | test("com.apple.CoreSimulator.SimRuntime.iOS"))
-                  | .value[]
-                  | select(.isAvailable == true)
-                  | select(.name | startswith("iPhone"))
-                ] | first | (.udid // empty)')
-            if [ -z "$UDID" ]; then
-              echo "No iPhone simulator available" >&2
-              exit 1
-            fi
-            echo "Fallback simulator UDID: $UDID"
-          fi
+          UDID=$(./scripts/pick-simulator.sh)
+          echo "Selected simulator UDID: $UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
       - name: Boot simulator

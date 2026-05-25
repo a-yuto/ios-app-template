@@ -1,6 +1,8 @@
 source "https://rubygems.org"
 
-gem "fastlane", "~> 2.220"
+ruby "~> 3.3"
+
+gem "fastlane"
 gem "xcpretty"
 
 plugins_path = File.join(File.dirname(__FILE__), "fastlane", "Pluginfile")

@@ -6,10 +6,13 @@ PROJECT = "ios-app-template.xcodeproj"
 platform :ios do
   desc "Unit + UI テストを実行"
   lane :test do
+    udid = `#{File.expand_path("../scripts/pick-simulator.sh", __dir__)}`.strip
+    UI.user_error!("pick-simulator.sh が失敗しました") if udid.empty?
+
     run_tests(
       project: PROJECT,
       scheme: SCHEME,
-      devices: ["iPhone 16"],
+      destination: "platform=iOS Simulator,id=#{udid}",
       clean: true,
       code_coverage: true
     )
