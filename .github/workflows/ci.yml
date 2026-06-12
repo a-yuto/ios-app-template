@@ -48,10 +48,23 @@ jobs:
           echo "Selected simulator UDID: $UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
+      # bootstatus -b は共有ランナーでブートが進まないと永久に返ってこず、
+      # ジョブ全体の timeout-minutes を使い切る (niki-sandbox#94)。
+      # ポーリング + ステップ単位の backstop に置き換え、Booted にならなくても
+      # 失敗にせず続行する (xcodebuild は自力でブートできるため非致命)。
       - name: Boot simulator
+        timeout-minutes: 8
         run: |
-          xcrun simctl boot "${{ steps.sim.outputs.udid }}" || true
-          xcrun simctl bootstatus "${{ steps.sim.outputs.udid }}" -b
+          UDID="${{ steps.sim.outputs.udid }}"
+          xcrun simctl boot "$UDID" || true
+          for i in $(seq 1 60); do
+            STATE=$(xcrun simctl list devices --json \
+              | jq -r --arg u "$UDID" '.devices[][] | select(.udid == $u) | .state')
+            echo "[$i/60] state=$STATE"
+            [ "$STATE" = "Booted" ] && exit 0
+            sleep 5
+          done
+          echo "::warning::Simulator did not reach Booted within 5min; continuing (xcodebuild will boot it)"
 
       - name: Build for testing
         run: |
@@ -76,6 +89,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             test-without-building | xcbeautify
 
+      # 共有ランナーは遅く、ローカルでパスする UI テストが waitForExistence の
+      # タイムアウトでフレークする (niki-sandbox#95)。失敗したテストだけ最大3回
+      # 再試行する。Unit テストは安定しているのでリトライ不要。
       - name: Run UI tests
         run: |
           set -o pipefail
@@ -85,5 +101,7 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -configuration Debug \
             -only-testing:ios-app-templateUITests \
+            -retry-tests-on-failure \
+            -test-iterations 3 \
             CODE_SIGNING_ALLOWED=NO \
             test-without-building | xcbeautify

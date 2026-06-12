@@ -32,7 +32,7 @@ find . -depth -name "*ios-app-template*" -execdir bash -c 'mv "$1" "${1/ios-app-
 find . -depth -name "*ios_app_template*" -execdir bash -c 'mv "$1" "${1/ios_app_template/'"$NEW_NAME_UNDERSCORE"'}"' _ {} \;
 
 # ファイル内容を置換
-grep -rl "ios-app-template" --include="*.swift" --include="*.yml" --include="*.pbxproj" --include="*.md" --include="Fastfile" --include="Appfile" . | xargs sed -i "" "s/ios-app-template/$NEW_NAME/g"
+grep -rl "ios-app-template" --include="*.swift" --include="*.yml" --include="*.pbxproj" --include="*.md" --include="Fastfile" --include="Appfile" --include="Gemfile" --include="Pluginfile" --include="*.sh" . | xargs sed -i "" "s/ios-app-template/$NEW_NAME/g"
 grep -rl "ios_app_template" --include="*.swift" --include="*.yml" --include="*.pbxproj" --include="*.md" . | xargs sed -i "" "s/ios_app_template/$NEW_NAME_UNDERSCORE/g"
 ```
 
@@ -40,12 +40,23 @@ grep -rl "ios_app_template" --include="*.swift" --include="*.yml" --include="*.p
 
 ### 2. Bundle ID / Team ID の差し替え
 
-`ios-app-template.xcodeproj/project.pbxproj` 内の以下を編集:
+テンプレートのデフォルトはプレースホルダー値 (`com.example.*` / Team ID 空) です。
+**そのままでもシミュレータでのビルド・テストは通りますが、実機・TestFlight 前に必ず差し替えてください。**
 
-- `PRODUCT_BUNDLE_IDENTIFIER` (3箇所: app / Tests / UITests)
-- `DEVELOPMENT_TEAM` (個人開発者のTeam ID)
+```bash
+BUNDLE_PREFIX="com.yourdomain"   # あなたの Bundle ID プレフィックス
 
-または Xcode の **Signing & Capabilities** から GUI で変更。
+# Bundle ID (app / Tests / UITests の3箇所) を一括差し替え
+sed -i "" "s/com\.example\./$BUNDLE_PREFIX./g" "$NEW_NAME.xcodeproj/project.pbxproj"
+
+# Team ID は Xcode の Signing & Capabilities で設定するか、pbxproj の
+# DEVELOPMENT_TEAM = ""; を直接編集
+
+# 差し替え漏れの検知 (何も出なければOK)
+grep -rn "com.example" --include="*.pbxproj" .
+```
+
+> `fastlane/Appfile` の `app_identifier` は pbxproj から自動解決されるため、編集不要です。
 
 ### 3. 依存ツールのインストール
 
@@ -75,6 +86,10 @@ bundle install
 ### 4. 動作確認
 
 ```bash
+# xcode-select が CommandLineTools を指している環境では swiftlint / simctl が
+# 壊れるため、まず DEVELOPER_DIR を通す (詳細はスクリプト内コメント参照)
+source scripts/dev-env.sh
+
 # ビルド + Unit + UI テスト
 bundle exec fastlane test
 
@@ -87,6 +102,9 @@ bundle exec fastlane lint
 ### 日常コマンド
 
 ```bash
+# 最初に1回 (シェルごと): Xcode ツールチェーンを通す
+source scripts/dev-env.sh
+
 # Format
 swiftformat .
 
@@ -111,8 +129,17 @@ xcodebuild test \
 `.github/workflows/ci.yml` が以下を実行します。
 
 - `lint`: SwiftLint (`--strict`)
-- `build-and-test`: build + Unit テスト
-- `ui-test`: XCUITest (build-and-test 成功後)
+- `test`: build + Unit テスト + XCUITest (UI テストは失敗時最大3回自動リトライ)
+
+### App Store スクリーンショット
+
+撮影専用 UI テスト (`ScreenshotCaptureUITests`) で再現性のあるスクリーンショットを撮れます。
+UI が変わっても1コマンドで撮り直せます。
+
+```bash
+bundle exec fastlane screenshots
+# → fastlane/screenshots/ に書き出される
+```
 
 ### TestFlight 配信
 
@@ -121,7 +148,13 @@ xcodebuild test \
 bundle exec fastlane beta
 ```
 
-詳細は [`fastlane/README.md`](fastlane/README.md) を参照。
+API キーの作成手順を含む詳細は [`fastlane/README.md`](fastlane/README.md) を参照。
+
+### リリース準備
+
+App Store 申請に必要なコード外の作業 (ASC 設定・メタデータ・プライバシーラベル等) は
+[`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) に順序付きでまとめています。
+リードタイムの長い項目があるため、申請の数日前に一読を推奨。
 
 ## ディレクトリ構成
 
@@ -132,13 +165,19 @@ bundle exec fastlane beta
 ├── .swiftformat                     # SwiftFormat 設定
 ├── .swiftlint.yml                   # SwiftLint 設定
 ├── CLAUDE.md                        # Claude Code 向けプロジェクト情報
+├── Config/
+│   └── Info.plist                   # 手書き Info.plist (同期グループ外に置く)
 ├── Gemfile                          # Fastlane の依存
 ├── README.md
+├── docs/
+│   └── RELEASE_CHECKLIST.md         # App Store 申請チェックリスト
 ├── fastlane/                        # Fastlane 設定
 │   ├── Appfile
 │   ├── Fastfile
 │   └── README.md
 ├── scripts/
+│   ├── dev-env.sh                   # DEVELOPER_DIR を自動設定 (source して使う)
+│   ├── generate-app-icon.sh         # プレースホルダー AppIcon 生成
 │   └── pick-simulator.sh            # ローカル/CI 共通: iPhone Simulator 動的選択
 ├── ios-app-template/                # アプリ本体
 │   ├── Assets.xcassets/
@@ -153,4 +192,3 @@ bundle exec fastlane beta
 ## Issue 管理
 
 このテンプレートおよび派生プロジェクトの issue は **すべて** [`a-yuto/niki-sandbox`](https://github.com/a-yuto/niki-sandbox/issues) に集約します。詳細は [`CLAUDE.md`](CLAUDE.md) を参照。
-# ios-app-template

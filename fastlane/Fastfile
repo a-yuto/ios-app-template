@@ -4,10 +4,30 @@ SCHEME = "ios-app-template"
 PROJECT = "ios-app-template.xcodeproj"
 
 platform :ios do
+  desc "App Store Connect API キーを env から設定 (ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH)"
+  private_lane :setup_api_key do
+    key_id = ENV["ASC_KEY_ID"] || ENV["APP_STORE_CONNECT_API_KEY_ID"]
+    issuer_id = ENV["ASC_ISSUER_ID"] || ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"]
+    key_path = ENV["ASC_KEY_PATH"] || ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+
+    if key_id && issuer_id && key_path
+      app_store_connect_api_key(
+        key_id: key_id,
+        issuer_id: issuer_id,
+        key_filepath: key_path
+      )
+    else
+      UI.important(
+        "ASC API キーが未設定です (ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH)。" \
+        "Apple ID + 2FA セッションでの認証にフォールバックします。" \
+        "キーの作り方は fastlane/README.md を参照。"
+      )
+    end
+  end
+
   desc "Unit + UI テストを実行"
   lane :test do
-    udid = `#{File.expand_path("../scripts/pick-simulator.sh", __dir__)}`.strip
-    UI.user_error!("pick-simulator.sh が失敗しました") if udid.empty?
+    udid = pick_simulator_udid
 
     run_tests(
       project: PROJECT,
@@ -28,17 +48,48 @@ platform :ios do
     )
   end
 
+  desc "App Store 用スクリーンショットを UI テストで撮影し fastlane/screenshots/ に書き出す"
+  lane :screenshots do
+    udid = pick_simulator_udid
+
+    # TEST_RUNNER_ 接頭辞の env は xcodebuild がテストランナーへ転送する。
+    # xcodebuild の「引数」として渡すと届かず、テストがすべて skip されるので注意 (niki-sandbox#100)。
+    ENV["TEST_RUNNER_CAPTURE_SCREENSHOTS"] = "1"
+
+    output_dir = File.expand_path("screenshots", __dir__)
+    FileUtils.rm_rf(output_dir)
+
+    run_tests(
+      project: PROJECT,
+      scheme: SCHEME,
+      destination: "platform=iOS Simulator,id=#{udid}",
+      only_testing: ["ios-app-templateUITests/ScreenshotCaptureUITests"],
+      result_bundle: true,
+      output_directory: output_dir
+    )
+
+    xcresult = Dir[File.join(output_dir, "*.xcresult")].first
+    UI.user_error!("xcresult が見つかりません: #{output_dir}") unless xcresult
+    sh("xcrun", "xcresulttool", "export", "attachments", "--path", xcresult, "--output-path", output_dir)
+    UI.success("スクリーンショットを書き出しました: #{output_dir}")
+  end
+
   desc "TestFlight にベータ配信 (要 App Store Connect API Key)"
   lane :beta do
+    setup_api_key
     ensure_git_status_clean
     increment_build_number(xcodeproj: PROJECT)
 
+    # -allowProvisioningUpdates が無いと、Apple Distribution 証明書を持たない
+    # 新規環境でクラウド署名による自動取得がされず失敗する (niki-sandbox#96)
     build_app(
       project: PROJECT,
       scheme: SCHEME,
       configuration: "Release",
       export_method: "app-store",
-      clean: true
+      clean: true,
+      xcargs: "-allowProvisioningUpdates",
+      export_xcargs: "-allowProvisioningUpdates"
     )
 
     upload_to_testflight(
@@ -48,18 +99,27 @@ platform :ios do
 
   desc "App Store に申請 (慎重に使う)"
   lane :release do
+    setup_api_key
     ensure_git_status_clean
     build_app(
       project: PROJECT,
       scheme: SCHEME,
       configuration: "Release",
       export_method: "app-store",
-      clean: true
+      clean: true,
+      xcargs: "-allowProvisioningUpdates",
+      export_xcargs: "-allowProvisioningUpdates"
     )
     upload_to_app_store(
       submit_for_review: false,
       automatic_release: false,
       force: true
     )
+  end
+
+  def pick_simulator_udid
+    udid = `#{File.expand_path("../scripts/pick-simulator.sh", __dir__)}`.strip
+    UI.user_error!("pick-simulator.sh が失敗しました") if udid.empty?
+    udid
   end
 end
