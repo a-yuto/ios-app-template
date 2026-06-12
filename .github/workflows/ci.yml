@@ -77,7 +77,11 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build-for-testing | xcbeautify
 
+      # xcodebuild test 自体が共有ランナー上でサイレントにハングすることがある
+      # (実例: destination 警告を出した後41分無出力)。ジョブ全体の 45 分を
+      # 溶かさないよう、ステップ単位で打ち切って再実行を安くする (niki-sandbox#94 と同じ思想)
       - name: Run unit tests
+        timeout-minutes: 15
         run: |
           set -o pipefail
           xcodebuild \
@@ -93,6 +97,7 @@ jobs:
       # タイムアウトでフレークする (niki-sandbox#95)。失敗したテストだけ最大3回
       # 再試行する。Unit テストは安定しているのでリトライ不要。
       - name: Run UI tests
+        timeout-minutes: 20
         run: |
           set -o pipefail
           xcodebuild \
