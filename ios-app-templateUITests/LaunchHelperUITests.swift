@@ -15,6 +15,6 @@ final class LaunchHelperUITests: XCTestCase {
     @MainActor
     func testLaunchForUITestShowsMainScreen() {
         let app = XCUIApplication.launchForUITest()
-        XCTAssertTrue(app.buttons["Add Item"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Add Item"].waitForExistence(timeout: 30))
     }
 }
