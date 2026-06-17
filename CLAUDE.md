@@ -161,6 +161,9 @@ xcodebuild \
 bundle exec fastlane lint && bundle exec fastlane test
 ```
 
+> fastlane の各 lane は Gemfile の Ruby `~> 3.3` を要する。Ruby が古い環境では
+> 上記が動かないので、その場合は上の 1〜4 の `xcodebuild` 手順を直接使う。
+
 > `scripts/pick-simulator.sh` は優先順 (iPhone 17 系 → 16 系 → ...) で利用可能な simulator を1つ選び、UDID を返す (ローカル実行用。Xcode Cloud は workflow 側で destination を指定する)。明示指定したい場合は `SIMULATOR_NAME="iPhone 16 Pro" scripts/pick-simulator.sh`。
 
 ### テスト変更時のユーザー確認 (必須)
@@ -200,6 +203,20 @@ xcodebuild test \
   -destination "platform=iOS Simulator,id=$UDID" \
   -only-testing:ios-app-templateUITests | xcbeautify
 ```
+
+## 主要ファイルと構成
+
+- `ios-app-template/ios_app_templateApp.swift` — アプリのエントリポイント (`@main`)
+- `ios-app-template/ContentView.swift` — ルート View
+- `ios-app-template/Item.swift` — SwiftData の `@Model`
+- `Config/Info.plist` — 手書き Info.plist (`GENERATE_INFOPLIST_FILE = NO`)
+- `ios-app-templateTests/` — Unit (Swift Testing) / `ios-app-templateUITests/` — UI (XCUITest)
+
+**gotcha: このプロジェクトは `PBXFileSystemSynchronizedRootGroup` (objectVersion 77) を使う。**
+各ターゲットのフォルダにファイルを置くだけで、そのターゲットに**自動で参加**する
+(pbxproj の手動編集は不要)。テスト追加も同期グループ内に `.swift` を置くだけでよい。
+`Config/Info.plist` を同期グループ外の `Config/` に置いているのは、同期グループ内だと
+リソースとして扱われてしまうのを避けるため。
 
 ## プロジェクトの基本構成
 
