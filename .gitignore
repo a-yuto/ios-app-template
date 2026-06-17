@@ -76,3 +76,6 @@ AuthKey_*.p8
 
 # Logs
 *.log
+
+# Claude Code - 個人環境メモ (チーム共有しない)
+.claude.local.md
