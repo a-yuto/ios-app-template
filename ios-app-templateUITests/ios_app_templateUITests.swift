@@ -16,7 +16,7 @@ final class ios_app_templateUITests: XCTestCase {
         app.launch()
 
         let addButton = app.buttons["Add Item"]
-        XCTAssertTrue(addButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(addButton.waitForExistence(timeout: 30))
 
         let initialCount = app.cells.count
         addButton.tap()

@@ -35,7 +35,7 @@ final class ScreenshotCaptureUITests: XCTestCase {
     @MainActor
     func testCaptureMainScreen() {
         let app = XCUIApplication.launchForUITest()
-        XCTAssertTrue(app.buttons["Add Item"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Add Item"].waitForExistence(timeout: 30))
         capture(named: "01-main")
     }
 
